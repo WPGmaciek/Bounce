@@ -79,14 +79,19 @@ class Ball:
         self.vy=0
     def movement(self):
         g = 0.2#gravity
-        ar = 1#air resistance
+        ar = 0.0001#air resistance
         
         self.vy += g # apply g
         
-        if self.vx > 0: # air resistance
+        if self.vx < 0: # air resistance
             self.vx += self.vx**2*ar#add if negative
-        if self.vx < 0:
+        if self.vx > 0:
             self.vx -= self.vx**2*ar#subtract if positive
+            
+        if self.vy < 0: # air resistance (for Y)
+            self.vy += self.vy**2*ar
+        if self.vy > 0:
+            self.vy -= self.vy**2*ar
             
             
         self.x+=self.vx#apply velocity
@@ -137,8 +142,8 @@ while True:
                 
                 
     screen.fill((0,0,0))
-    for x,y,radius in stars:
-        pygame.draw.circle(screen,(255,255,255),(x, y),radius)
+    for x,y,r in stars:
+        pygame.draw.circle(screen,(255,255,255),(x, y),r)
         
     pygame.draw.rect(screen, (250, 50, 0), (0, 1020, 1920, 60))
         
