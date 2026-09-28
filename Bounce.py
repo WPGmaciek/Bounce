@@ -77,6 +77,9 @@ class Ball:
         self.colour=colour
         self.vx=0
         self.vy=0
+        self.surface = pygame.Surface((self.r * 2, self.r * 2),pygame.SRCALPHA)
+        pygame.draw.circle(self.surface,(255, 255, 255, 255),(radius, radius),radius)
+        self.mask = pygame.mask.from_surface(self.surface)
     def movement(self):
         g = 0.2#gravity
         ar = 0.0001#air resistance
@@ -99,8 +102,39 @@ class Ball:
         
         
     def collision(self):
-        terrain_mask = pygame.mask.from_threshold(screen, (128, 128, 128), (20, 20, 20), 5)
-        
+        terrain_mask = pygame.mask.from_threshold(screen, (128, 128, 128,255),(1,1,1,255))
+        if terrain_mask.overlap(self.mask,(self.x-cam_x-self.r,self.y-self.r)) != None:
+        #binary search to find the two closest terrain coordinates
+            left, right = 0, len(terrain) - 1
+            while left < right:
+                mid = (left + right) // 2
+                if terrain[mid][0] < self.x:
+                    left = mid + 1
+                else:
+                    right = mid
+            R = max(0, min(right, len(terrain) - 2))#prevent extreme values
+            L=R-1 #left and right coords
+            #get normal
+            dx= terrain[R][0]-terrain[L][0]
+            dy= terrain[R][1]-terrain[L][1]
+            
+            length=(dx**2+dy**2)**0.5
+            if int(self.x) == terrain[L][0] or int(self.x) == terrain[R][0]:#collision between 2 points
+                nx = 0
+                ny = 1
+            else:
+                nx = -dy / length
+                ny = dx / length#rotate 90 degrees and make magnitude 1
+            
+            dot=self.vx*nx+self.vy*ny
+            self.vx-=2*dot*nx
+            self.vy-=2*dot*ny
+            while terrain_mask.overlap(self.mask,(self.x-cam_x-self.r,self.y-self.r)) != None:
+                self.x-nx
+                self.y-=ny
+            
+            
+            
     def draw(self):
         pygame.draw.circle(screen,self.colour,(self.x-cam_x,self.y),self.r)
         
@@ -138,6 +172,8 @@ while True:
     keys = pygame.key.get_pressed()
     if keys[pygame.K_d]:
         cam_x+=20
+    if keys[pygame.K_a]:
+        cam_x-=20
                 
                 
                 
@@ -149,6 +185,8 @@ while True:
         
     pygame.draw.polygon(screen,(128,128,128),[(x-cam_x,y) for x,y in terrain])
     ball.movement()
+    ball.collision()
+    
     ball.draw()
     
     
