@@ -1,7 +1,8 @@
 import pygame
 import random
 pygame.init()
-
+pygame.font.init()
+font = pygame.font.Font(None, 36)
 screen = pygame.display.set_mode(
     (1920,1080),
     pygame.RESIZABLE|pygame.SCALED|pygame.HWSURFACE|pygame.DOUBLEBUF|pygame.FULLSCREEN,
@@ -16,7 +17,7 @@ tx = -360
 ty = 360
 Gdebug=[]
 Sdebug=[]
-GSdebug=True
+GSdebug=False
 
 def generate_terrain():
     global tx,ty
@@ -75,7 +76,7 @@ class Ball:
         self.y=1080-y
         self.r=radius
         self.colour=colour
-        self.vx=0
+        self.vx=5
         self.vy=0
         self.surface = pygame.Surface((self.r * 2, self.r * 2),pygame.SRCALPHA)
         pygame.draw.circle(self.surface,(255, 255, 255, 255),(radius, radius),radius)
@@ -141,7 +142,7 @@ class Ball:
         
 
 
-ball = Ball(480,810,10,(255,0,0))
+ball = Ball(480,1000,10,(255,0,0))
 
 
 
@@ -167,7 +168,9 @@ while True:
                 Gdebug=[]
                 Sdebug=[]
                 generate_terrain()
-                ball = Ball(480,810,10,(255,0,0))
+                ball = Ball(480,1000,10,(255,0,0))
+            if e.key ==pygame.K_SPACE:
+                ball.vy=-ball.vy
                 
     keys = pygame.key.get_pressed()
     if keys[pygame.K_d]:
@@ -176,13 +179,14 @@ while True:
         cam_x-=20
                 
                 
-                
     screen.fill((0,0,0))
     for x,y,r in stars:
         pygame.draw.circle(screen,(255,255,255),(x, y),r)
         
     pygame.draw.rect(screen, (250, 50, 0), (0, 1020, 1920, 60))
-        
+    
+    
+    cam_x+= (ball.x-720-cam_x)*0.1
     pygame.draw.polygon(screen,(128,128,128),[(x-cam_x,y) for x,y in terrain])
     ball.movement()
     ball.collision()
@@ -198,6 +202,7 @@ while True:
         pygame.draw.line(screen,(0,255,0),(0,690),(1920,690))
         pygame.draw.line(screen,(0,0,255),(0,800),(1920,800))
         
-        
+    screen.blit(font.render("FPS:"+str(int(fps)),True,(255,255,255)),(0,0))
+
     
     pygame.display.flip()
