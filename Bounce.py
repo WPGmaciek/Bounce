@@ -1,5 +1,6 @@
 import pygame
 import random
+import math
 pygame.init()
 pygame.font.init()
 font = pygame.font.Font(None, 36)
@@ -15,9 +16,7 @@ FPS = 60
 terrain = []
 tx = -360
 ty = 360
-Gdebug=[]
-Sdebug=[]
-GSdebug=False
+
 
 def generate_terrain():
     global tx,ty
@@ -60,8 +59,6 @@ def generate_terrain():
         tx+=random.randint(int(100/s),int(200/s))
             
         terrain.append((tx,1080-ty))
-        Gdebug.append((tx,540-10*g))
-        Sdebug.append((tx,800-10*s))
 
     terrain.append((tx,1080))
 
@@ -83,7 +80,7 @@ class Ball:
         self.mask = pygame.mask.from_surface(self.surface)
     def movement(self):
         g = 0.2#gravity
-        ar = 0.0001#air resistance
+        ar = 0.0000#air resistance
         
         self.vy += g # apply g
         
@@ -130,14 +127,41 @@ class Ball:
             dot=self.vx*nx+self.vy*ny
             self.vx-=2*dot*nx
             self.vy-=2*dot*ny
+
             while terrain_mask.overlap(self.mask,(self.x-cam_x-self.r,self.y-self.r)) != None:
-                self.x-nx
+                self.x-=nx
                 self.y-=ny
+
             
             
             
     def draw(self):
         pygame.draw.circle(screen,self.colour,(self.x-cam_x,self.y),self.r)
+    def bat(self):
+        mx,my = pygame.mouse.get_pos()
+        dx=mx-self.x+cam_x
+        dy=my-self.y
+        if dx<0:
+            dx=0
+        d = (dx**2 + dy**2) ** 0.5
+        nx=(dx/d)
+        ny=(dy/d)
+        dx=100*nx
+        dy=100*ny
+        pygame.draw.circle(screen,self.colour,(self.x+dx-cam_x,self.y+dy),self.r/2)
+        global hit
+        if hit == True:
+            global batcd
+            if batcd==0:         
+                dot=self.vx*nx+self.vy*ny
+                if nx>0:
+                    self.vx-=2*dot*nx
+                if ny>0:
+                    self.vy-=2*dot*ny
+                self.vx-=10*nx
+                self.vy-=10*ny
+                batcd=240
+            hit=False
         
         
 
@@ -149,7 +173,8 @@ ball = Ball(480,1000,10,(255,0,0))
 
 
 
-
+hit=False
+batcd=60
 
 while True:
     dt = clock.tick(FPS)/1000
@@ -165,19 +190,20 @@ while True:
                 terrain = []
                 tx = 0
                 ty = 360
-                Gdebug=[]
-                Sdebug=[]
                 generate_terrain()
                 ball = Ball(480,1000,10,(255,0,0))
             if e.key ==pygame.K_SPACE:
-                ball.vy=-ball.vy
+                hit=True
                 
     keys = pygame.key.get_pressed()
     if keys[pygame.K_d]:
         cam_x+=20
     if keys[pygame.K_a]:
         cam_x-=20
-                
+    if keys[pygame.K_f]:
+        FPS = 3
+    else:
+        FPS = 60
                 
     screen.fill((0,0,0))
     for x,y,r in stars:
@@ -192,17 +218,12 @@ while True:
     ball.collision()
     
     ball.draw()
-    
-    
-    if GSdebug==True:
-        pygame.draw.lines(screen,(0,255,0),False,[(x-cam_x,y) for x,y in Gdebug],3)
-        pygame.draw.lines(screen,(0,0,255),False,[(x-cam_x,y) for x,y in Sdebug],3)
-        pygame.draw.line(screen,(0,255,0),(0,390),(1920,390))
-        pygame.draw.line(screen,(0,255,0),(0,540),(1920,540))
-        pygame.draw.line(screen,(0,255,0),(0,690),(1920,690))
-        pygame.draw.line(screen,(0,0,255),(0,800),(1920,800))
-        
+    ball.bat()
+    if batcd>0:
+        batcd-=1
     screen.blit(font.render("FPS:"+str(int(fps)),True,(255,255,255)),(0,0))
+    screen.blit(font.render("Cooldown: "+str(batcd),True,(255,255,255)),(0,20))
+    screen.blit(font.render("X Velocity: "+str(ball.vx),True,(255,255,255)),(0,40))
 
     
     pygame.display.flip()
