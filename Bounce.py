@@ -80,7 +80,7 @@ class Ball:
         self.mask = pygame.mask.from_surface(self.surface)
     def movement(self):
         g = 0.2#gravity
-        ar = 0.0000#air resistance
+        ar = 0.00005#air resistance
         
         self.vy += g # apply g
         
@@ -154,9 +154,9 @@ class Ball:
             global batcd
             if batcd==0:         
                 dot=self.vx*nx+self.vy*ny
-                if nx>0:
+                if self.vx>0:
                     self.vx-=2*dot*nx
-                if ny>0:
+                if ny>0 and self.vy> 0 or ny<0 and self.vy<0:
                     self.vy-=2*dot*ny
                 self.vx-=10*nx
                 self.vy-=10*ny
