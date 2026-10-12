@@ -146,9 +146,18 @@ class Ball:
         d = (dx**2 + dy**2) ** 0.5
         nx=(dx/d)
         ny=(dy/d)
-        dx=100*nx
-        dy=100*ny
-        pygame.draw.circle(screen,self.colour,(self.x+dx-cam_x,self.y+dy),self.r/2)
+        dx=50*nx
+        dy=50*ny
+        tx=-ny
+        ty=nx
+        points = []
+        points.append(((self.x+dx-cam_x+60*tx+4*nx),(self.y+dy+60*ty+ny*4)))
+        points.append(((self.x+dx-cam_x-20*tx+8*nx),(self.y+dy-20*ty+ny*8)))
+        points.append(((self.x+dx-cam_x-20*tx-8*nx),(self.y+dy-20*ty-ny*8)))
+        points.append(((self.x+dx-cam_x+60*tx-4*nx),(self.y+dy+60*ty-ny*4)))
+        pygame.draw.polygon(screen,(self.colour),points)
+        
+        
         global hit
         if hit == True:
             global batcd
@@ -224,6 +233,6 @@ while True:
     screen.blit(font.render("FPS:"+str(int(fps)),True,(255,255,255)),(0,0))
     screen.blit(font.render("Cooldown: "+str(batcd),True,(255,255,255)),(0,20))
     screen.blit(font.render("X Velocity: "+str(ball.vx),True,(255,255,255)),(0,40))
-
+    screen.blit(font.render("Y Velocity: "+str(ball.vy),True,(255,255,255)),(0,60))
     
     pygame.display.flip()
