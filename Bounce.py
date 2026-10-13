@@ -1,6 +1,7 @@
 import pygame
 import random
 import math
+import pygame.gfxdraw
 pygame.init()
 pygame.font.init()
 font = pygame.font.Font(None, 36)
@@ -15,7 +16,7 @@ FPS = 60
 
 terrain = []
 tx = -360
-ty = 360
+ty = 1080
 
 
 def generate_terrain():
@@ -23,7 +24,7 @@ def generate_terrain():
     terrain.append((tx,1080))
     terrain.append((tx,1080-ty))
     s = 4 #spikiness
-    g = 0 #gradient
+    g = -20 #gradient
     gv=5 #gradient variability, how often gradient changes
     sv=10 #spikiness, as above
     for i in range(1000):
@@ -66,7 +67,7 @@ def generate_terrain():
 generate_terrain()
 stars = [(random.randint(0, 1920), random.randint(0, 1080), random.randint(1, 2)) for _ in range(69)]
 cam_x=0
-
+batdist=50
 class Ball:
     def __init__(self,x,y,radius,colour):
         self.x=x
@@ -136,7 +137,8 @@ class Ball:
             
             
     def draw(self):
-        pygame.draw.circle(screen,self.colour,(self.x-cam_x,self.y),self.r)
+        pygame.draw.circle(screen,self.colour,(int(self.x-cam_x),int(self.y)),self.r)
+        pygame.gfxdraw.aacircle(screen,int(self.x-cam_x),int(self.y),self.r,self.colour)
     def bat(self):
         mx,my = pygame.mouse.get_pos()
         dx=mx-self.x+cam_x
@@ -146,34 +148,45 @@ class Ball:
         d = (dx**2 + dy**2) ** 0.5
         nx=(dx/d)
         ny=(dy/d)
-        dx=50*nx
-        dy=50*ny
+        global batdist,batcd
+        dx=batdist*nx
+        dy=batdist*ny
+        
         tx=-ny
         ty=nx
         points = []
         points.append(((self.x+dx-cam_x+60*tx+4*nx),(self.y+dy+60*ty+ny*4)))
-        points.append(((self.x+dx-cam_x-20*tx+8*nx),(self.y+dy-20*ty+ny*8)))
+        points.append(((self.x+dx-cam_x+30*tx+4*nx),(self.y+dy+30*ty+ny*4)))
+        points.append(((self.x+dx-cam_x-20*tx+8*nx),(self.y+dy-20*ty+ny*8)))  
         points.append(((self.x+dx-cam_x-20*tx-8*nx),(self.y+dy-20*ty-ny*8)))
+        points.append(((self.x+dx-cam_x+30*tx-4*nx),(self.y+dy+30*ty-ny*4)))
         points.append(((self.x+dx-cam_x+60*tx-4*nx),(self.y+dy+60*ty-ny*4)))
-        pygame.draw.polygon(screen,(self.colour),points)
+        batcol=(255-batcd,0,0)
+        pygame.draw.polygon(screen,batcol,points)
+        pygame.draw.aalines(screen,self.colour,True,points)
         
         
         global hit
         if hit == True:
-            global batcd
-            if batcd==0:         
-                dot=self.vx*nx+self.vy*ny
-                if self.vx>0:
-                    self.vx-=2*dot*nx
-                if ny>0 and self.vy> 0 or ny<0 and self.vy<0:
-                    self.vy-=2*dot*ny
-                self.vx-=10*nx
-                self.vy-=10*ny
-                batcd=240
+            
+            if batcd==0:
+                batdist-=10
+            else:
+                hit=False
+                
+        if batdist ==10:
+            dot=self.vx*nx+self.vy*ny
+            if self.vx>0:
+                self.vx-=2*dot*nx
+            if ny>0 and self.vy> 0 or ny<0 and self.vy<0:
+                self.vy-=2*dot*ny
+            self.vx-=10*nx
+            self.vy-=10*ny
+            batcd=240
             hit=False
+        if batdist<50 and hit==False:
+            batdist+=10
         
-        
-
 
 ball = Ball(480,1000,10,(255,0,0))
 
@@ -197,8 +210,8 @@ while True:
             if e.key==pygame.K_r:
                 cam_x=0
                 terrain = []
-                tx = 0
-                ty = 360
+                tx = -360
+                ty = 1080
                 generate_terrain()
                 ball = Ball(480,1000,10,(255,0,0))
             if e.key ==pygame.K_SPACE:
@@ -215,24 +228,31 @@ while True:
         FPS = 60
                 
     screen.fill((0,0,0))
+    
+    
     for x,y,r in stars:
         pygame.draw.circle(screen,(255,255,255),(x, y),r)
+    if ball.y>1020-ball.r:
+        screen.blit(font.render("Distance: "+str(int(ball.x/100))+"m",True,(255,50,0)),(820,480))
+        screen.blit(font.render("GAME OVER",True,(255,50,0)),(820,500))
+        screen.blit(font.render("Press R to restart",True,(255,50,0)),(820,520))
+    else:
+        pygame.draw.rect(screen, (250, 50, 0), (0, 1020, 1920, 60))
         
-    pygame.draw.rect(screen, (250, 50, 0), (0, 1020, 1920, 60))
-    
-    
-    cam_x+= (ball.x-720-cam_x)*0.1
-    pygame.draw.polygon(screen,(128,128,128),[(x-cam_x,y) for x,y in terrain])
-    ball.movement()
-    ball.collision()
-    
-    ball.draw()
-    ball.bat()
-    if batcd>0:
-        batcd-=1
-    screen.blit(font.render("FPS:"+str(int(fps)),True,(255,255,255)),(0,0))
-    screen.blit(font.render("Cooldown: "+str(batcd),True,(255,255,255)),(0,20))
-    screen.blit(font.render("X Velocity: "+str(ball.vx),True,(255,255,255)),(0,40))
-    screen.blit(font.render("Y Velocity: "+str(ball.vy),True,(255,255,255)),(0,60))
+        
+        cam_x+= (ball.x-720-cam_x)*0.1
+        pygame.draw.polygon(screen,(128,128,128),[(x-cam_x,y) for x,y in terrain])
+        pygame.draw.aalines(screen,(128,128,128),False,[(x-cam_x,y) for x,y in terrain])
+        ball.movement()
+        ball.collision()
+        
+        ball.draw()
+        ball.bat()
+        if batcd>0:
+            batcd-=1
+        screen.blit(font.render("FPS:"+str(int(fps)),True,(255,255,255)),(0,0))
+        screen.blit(font.render("Cooldown: "+str(batcd),True,(255,255,255)),(0,20))
+        screen.blit(font.render("X Velocity: "+str(ball.vx),True,(255,255,255)),(0,40))
+        screen.blit(font.render("Y Velocity: "+str(ball.vy),True,(255,255,255)),(0,60))
     
     pygame.display.flip()
